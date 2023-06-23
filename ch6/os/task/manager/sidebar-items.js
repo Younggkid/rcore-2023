@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":[["add_task","Add process to ready queue"],["fetch_task","Take a process out of the ready queue"]],"struct":[["TASK_MANAGER","TASK_MANAGER instance through lazy_static!"],["TaskManager","A array of `TaskControlBlock` that is thread-safe"]]};

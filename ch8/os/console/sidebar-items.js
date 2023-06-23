@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":[["print","print to the host console using the format string and arguments."]],"struct":[["Stdout",""]]};

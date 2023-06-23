@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"constant":[["VIRTIO0",""]],"struct":[["QUEUE_FRAMES","The global io data queue for virtio_blk device"],["VirtIOBlock","VirtIOBlock device driver strcuture for virtio_blk device"],["VirtioHal",""]]};

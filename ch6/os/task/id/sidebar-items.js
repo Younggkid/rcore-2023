@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":[["kernel_stack_position","Return (bottom, top) of a kernel stack in kernel space."],["kstack_alloc","allocate a new kernel stack"],["pid_alloc","Allocate a new PID"]],"struct":[["KSTACK_ALLOCATOR",""],["KernelStack","Kernel stack for a process(task)"],["PID_ALLOCATOR",""],["PidHandle","Abstract structure of PID"],["RecycleAllocator",""]]};

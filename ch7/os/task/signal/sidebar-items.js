@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"constant":[["MAX_SIG","The max signal number"]],"struct":[["SignalFlags","Signal flags"]]};

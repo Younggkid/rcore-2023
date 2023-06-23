@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":[["enable_timer_interrupt","enable timer interrupt in supervisor mode"],["init","Initialize trap handling"],["trap_handler","trap handler"]],"mod":[["context",""]],"struct":[["TrapContext","trap context structure containing sstatus, sepc and registers"]]};

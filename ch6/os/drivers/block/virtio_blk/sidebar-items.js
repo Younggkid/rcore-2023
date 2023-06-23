@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"constant":[["VIRTIO0","The base address of control registers in Virtio_Block device"]],"struct":[["QUEUE_FRAMES",""],["VirtIOBlock","VirtIOBlock device driver strcuture for virtio_blk device"],["VirtioHal",""]]};

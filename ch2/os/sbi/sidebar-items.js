@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"constant":[["SBI_CONSOLE_PUTCHAR",""]],"fn":[["console_putchar","use sbi call to putchar in console (qemu uart handler)"],["sbi_call","general sbi call"],["shutdown","use sbi call to shutdown the kernel"]]};

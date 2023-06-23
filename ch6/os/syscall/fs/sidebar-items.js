@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":[["sys_close",""],["sys_fstat","YOUR JOB: Implement fstat."],["sys_linkat","YOUR JOB: Implement linkat."],["sys_open",""],["sys_read",""],["sys_unlinkat","YOUR JOB: Implement unlinkat."],["sys_write",""]]};

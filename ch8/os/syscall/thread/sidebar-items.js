@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":[["sys_gettid","get current thread id syscall"],["sys_thread_create","thread create syscall"],["sys_waittid","wait for a thread to exit syscall"]]};
