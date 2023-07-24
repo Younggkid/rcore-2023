@@ -2,7 +2,7 @@
 use super::TaskContext;
 use crate::config::{TRAP_CONTEXT_BASE,MAX_SYSCALL_NUM};
 use crate::mm::{
-    kernel_stack_position, MapPermission, MemorySet, PhysPageNum, VirtAddr, KERNEL_SPACE,
+    kernel_stack_position, VirtPageNum,MapPermission, MemorySet, PhysPageNum, VirtAddr, KERNEL_SPACE,
 };
 use crate::trap::{trap_handler, TrapContext};
 
@@ -103,6 +103,42 @@ impl TaskControlBlock {
         } else {
             None
         }
+    }
+    ///map a vitual memory region starting from [start],length [len] to a physical memory
+    pub fn mmap(&mut self, start:usize, len:usize, prot:usize) -> Option<(VirtPageNum,VirtPageNum)>{
+        if prot & (!0x7) !=0 || prot & 0x7 == 0 {return None;}
+        for viradd in start..start+len {
+            let vpn = VirtAddr::from(viradd).floor();
+            if let Some(pte) = self.memory_set.translate(vpn){
+                if pte.is_valid() {return None;}
+            }
+        }
+        let st_add = VirtAddr(start);
+        let end_add = VirtAddr(start+len);
+        let mut map_perm = MapPermission::U;
+        if prot & 1 == 1 {
+            map_perm |= MapPermission::R;
+        }
+        if prot>>1 & 1 == 1 {
+            map_perm |= MapPermission::W;
+        }
+        if prot>>2 & 1 == 1 {
+            map_perm |= MapPermission::X;
+        }
+        self.memory_set.insert_framed_area(st_add, end_add,map_perm);
+
+        let start_vpn = st_add.floor();
+        let end_vpn = end_add.ceil();
+        Some((start_vpn,end_vpn))
+
+    }
+    /// opposite to mmap
+    pub fn munmap(&mut self, start:usize, len:usize) -> bool{
+        let st_add = VirtAddr(start);
+        let end_add = VirtAddr(start+len);
+
+        self.memory_set.remove_framed_area(st_add,end_add)
+
     }
 }
 

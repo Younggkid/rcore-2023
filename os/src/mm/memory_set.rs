@@ -63,6 +63,20 @@ impl MemorySet {
             None,
         );
     }
+    /// remove a vaddr region from memory_set
+    pub fn remove_framed_area(&mut self, start_va: VirtAddr, end_va: VirtAddr) -> bool {
+        if let Some(idx) = self
+            .areas
+            .iter_mut()
+            .position(|area| area.vpn_range.get_start() == start_va.floor() && area.vpn_range.get_end() == end_va.ceil())
+        {
+            self.areas[idx].unmap(&mut self.page_table);
+            self.areas.remove(idx);
+            true
+        } else {
+            false
+        }
+    }
     fn push(&mut self, mut map_area: MapArea, data: Option<&[u8]>) {
         map_area.map(&mut self.page_table);
         if let Some(data) = data {

@@ -19,6 +19,7 @@ use crate::loader::{get_app_data, get_num_app};
 use crate::timer::get_time_us;
 use crate::sync::UPSafeCell;
 use crate::trap::TrapContext;
+use crate::mm::VirtPageNum;
 use alloc::vec::Vec;
 use lazy_static::*;
 use switch::__switch;
@@ -162,7 +163,18 @@ impl TaskManager {
             panic!("All applications completed!");
         }
     }
+    fn mmap(&self,start: usize, len: usize, prot: usize) -> Option<(VirtPageNum, VirtPageNum)>{
+        let mut inner = self.inner.exclusive_access();
+        let current = inner.current_task;
+        inner.tasks[current].mmap(start,len,prot)
 
+    }
+    fn munmap(&self,start: usize, len: usize) ->bool{
+        let mut inner = self.inner.exclusive_access();
+        let current = inner.current_task;
+        inner.tasks[current].munmap(start,len)
+
+    }
     fn get_start_time(&self)-> Option<usize>{
         let inner = self.inner.exclusive_access();
         let current = inner.current_task;
@@ -201,7 +213,14 @@ fn mark_current_suspended() {
 fn mark_current_exited() {
     TASK_MANAGER.mark_current_exited();
 }
-
+/// mmap a region of vm 
+pub fn mmap(start: usize, len: usize, prot: usize)-> Option<(VirtPageNum, VirtPageNum)>{
+    TASK_MANAGER.mmap(start, len, prot)
+}
+/// unmap a region of vm
+pub fn munmap(start: usize, len: usize)-> bool{
+    TASK_MANAGER.munmap(start, len)
+}
 /// Suspend the current 'Running' task and run the next task in task list.
 pub fn suspend_current_and_run_next() {
     mark_current_suspended();
