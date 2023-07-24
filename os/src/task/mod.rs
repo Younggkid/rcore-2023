@@ -14,7 +14,9 @@ mod switch;
 #[allow(clippy::module_inception)]
 mod task;
 
+use crate::config::MAX_SYSCALL_NUM;
 use crate::loader::{get_app_data, get_num_app};
+use crate::timer::get_time;
 use crate::sync::UPSafeCell;
 use crate::trap::TrapContext;
 use alloc::vec::Vec;
@@ -79,6 +81,10 @@ impl TaskManager {
         let mut inner = self.inner.exclusive_access();
         let next_task = &mut inner.tasks[0];
         next_task.task_status = TaskStatus::Running;
+        //add a counter start for one task
+        if next_task.task_start_time.is_none(){
+            next_task.task_start_time = Some(get_time() as usize );
+        }
         let next_task_cx_ptr = &next_task.task_cx as *const TaskContext;
         drop(inner);
         let mut _unused = TaskContext::zero_init();
@@ -140,6 +146,9 @@ impl TaskManager {
             let mut inner = self.inner.exclusive_access();
             let current = inner.current_task;
             inner.tasks[next].task_status = TaskStatus::Running;
+            if inner.tasks[next].task_start_time.is_none(){
+                inner.tasks[next].task_start_time = Some(get_time() as usize );
+            }
             inner.current_task = next;
             let current_task_cx_ptr = &mut inner.tasks[current].task_cx as *mut TaskContext;
             let next_task_cx_ptr = &inner.tasks[next].task_cx as *const TaskContext;
@@ -152,6 +161,23 @@ impl TaskManager {
         } else {
             panic!("All applications completed!");
         }
+    }
+
+    fn get_start_time(&self)-> Option<usize>{
+        let inner = self.inner.exclusive_access();
+        let current = inner.current_task;
+        inner.tasks[current].task_start_time
+    }
+    fn get_syscall_times(&self)-> [u32;MAX_SYSCALL_NUM]{
+        let inner = self.inner.exclusive_access();
+        let current = inner.current_task;
+        inner.tasks[current].task_syscall_times.clone()
+    }
+
+    fn increase_current_syscall_times(&self, syscall_id: usize){
+        let mut inner = self.inner.exclusive_access();
+        let current = inner.current_task;
+        inner.tasks[current].task_syscall_times[syscall_id] += 1;  
     }
 }
 
@@ -201,4 +227,20 @@ pub fn current_trap_cx() -> &'static mut TrapContext {
 /// Change the current 'Running' task's program break
 pub fn change_program_brk(size: i32) -> Option<usize> {
     TASK_MANAGER.change_current_program_brk(size)
+}
+
+///interface to syscall
+pub fn get_current_start_time()-> Option<usize>
+{
+    TASK_MANAGER.get_start_time()
+}
+///interface to syscall
+pub fn get_current_syscall_times() -> [u32;MAX_SYSCALL_NUM]
+{
+    TASK_MANAGER.get_syscall_times()
+}
+///interface to syscall
+pub fn increase_current_syscall_times(syscall_id: usize)
+{
+    TASK_MANAGER.increase_current_syscall_times(syscall_id);
 }
