@@ -16,7 +16,7 @@ mod task;
 
 use crate::config::MAX_SYSCALL_NUM;
 use crate::loader::{get_app_data, get_num_app};
-use crate::timer::get_time;
+use crate::timer::get_time_us;
 use crate::sync::UPSafeCell;
 use crate::trap::TrapContext;
 use alloc::vec::Vec;
@@ -83,7 +83,7 @@ impl TaskManager {
         next_task.task_status = TaskStatus::Running;
         //add a counter start for one task
         if next_task.task_start_time.is_none(){
-            next_task.task_start_time = Some(get_time() as usize );
+            next_task.task_start_time = Some(get_time_us() as usize );
         }
         let next_task_cx_ptr = &next_task.task_cx as *const TaskContext;
         drop(inner);
@@ -147,7 +147,7 @@ impl TaskManager {
             let current = inner.current_task;
             inner.tasks[next].task_status = TaskStatus::Running;
             if inner.tasks[next].task_start_time.is_none(){
-                inner.tasks[next].task_start_time = Some(get_time() as usize );
+                inner.tasks[next].task_start_time = Some(get_time_us() as usize );
             }
             inner.current_task = next;
             let current_task_cx_ptr = &mut inner.tasks[current].task_cx as *mut TaskContext;

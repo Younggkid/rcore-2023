@@ -2,9 +2,9 @@
 use core::mem::size_of;
 
 use crate::{
-    config::MAX_SYSCALL_NUM,
+    config::{MAX_SYSCALL_NUM},
     task::{
-        current_user_token, change_program_brk, exit_current_and_run_next, suspend_current_and_run_next, TaskStatus,
+        get_current_syscall_times,get_current_start_time,current_user_token, change_program_brk, exit_current_and_run_next, suspend_current_and_run_next, TaskStatus,
     }, mm::{translated_byte_buffer, VirtAddr},
     timer::{get_time_us}
 };
@@ -74,7 +74,35 @@ pub fn sys_get_time(_ts: *mut TimeVal, _tz: usize) -> isize {
 /// HINT: What if [`TaskInfo`] is splitted by two pages ?
 pub fn sys_task_info(_ti: *mut TaskInfo) -> isize {
     trace!("kernel: sys_task_info NOT IMPLEMENTED YET!");
-    -1
+    let vir_addr: VirtAddr = (_ti as usize).into();
+    let buffers = translated_byte_buffer(current_user_token(), 
+                            vir_addr.0 as *const u8, 
+                        size_of::<TaskInfo>());
+    let start_time = match get_current_start_time(){
+        Some(time) => time,
+        None => {return -1;}
+    };
+    let now = get_time_us() as usize;
+    let interval = (now-start_time)/ 1000;
+    let task_info = TaskInfo{
+        status: TaskStatus::Running,
+        syscall_times: get_current_syscall_times(),
+        time: interval,
+    };
+
+    unsafe{
+        let task_info_bytes = core::slice::from_raw_parts((&task_info as *const TaskInfo) as *const u8 , size_of::<TaskInfo>());
+    
+    let mut idx = 0;
+    for buffer in buffers{
+        for i in 0..buffer.len(){
+            buffer[i] = task_info_bytes[idx];
+            idx += 1;
+        }
+    }
+    0
+}
+
     
 }
 // YOUR JOB: Implement mmap.
