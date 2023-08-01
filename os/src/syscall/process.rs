@@ -1,14 +1,15 @@
 //! Process management syscalls
 use alloc::sync::Arc;
-
+use core::mem::size_of;
 use crate::{
-    config::MAX_SYSCALL_NUM,
+    config::{MAX_SYSCALL_NUM,PAGE_SIZE},
     loader::get_app_data_by_name,
-    mm::{translated_refmut, translated_str},
+    mm::{translated_byte_buffer, VirtAddr,translated_refmut, translated_str},
     task::{
         add_task, current_task, current_user_token, exit_current_and_run_next,
         suspend_current_and_run_next, TaskStatus,
     },
+    timer::get_time_us,
 };
 
 #[repr(C)]
@@ -122,7 +123,32 @@ pub fn sys_get_time(_ts: *mut TimeVal, _tz: usize) -> isize {
         "kernel:pid[{}] sys_get_time NOT IMPLEMENTED",
         current_task().unwrap().pid.0
     );
-    -1
+    let ts_virt_addr: VirtAddr = (_ts as usize).into();
+
+    let buffers = translated_byte_buffer(
+        current_user_token(),
+        ts_virt_addr.0 as *const u8,
+        size_of::<TimeVal>(),
+    );
+    let us = get_time_us();
+    let time_val = TimeVal {
+        sec: us / 1_000_000,
+        usec: us % 1_000_000,
+    };
+    unsafe {
+        let time_val_bytes = core::slice::from_raw_parts(
+            (&time_val as *const TimeVal) as *const u8,
+            size_of::<TimeVal>(),
+        );
+        let mut idx = 0;
+        for buffer in buffers {
+            for i in 0..buffer.len() {
+                buffer[i] = time_val_bytes[idx];
+                idx += 1;
+            }
+        }
+    }
+    0
 }
 
 /// YOUR JOB: Finish sys_task_info to pass testcases
@@ -133,7 +159,36 @@ pub fn sys_task_info(_ti: *mut TaskInfo) -> isize {
         "kernel:pid[{}] sys_task_info NOT IMPLEMENTED",
         current_task().unwrap().pid.0
     );
-    -1
+    let task = current_task().unwrap();
+    let vir_addr: VirtAddr = (_ti as usize).into();
+    let buffers = translated_byte_buffer(current_user_token(), 
+                            vir_addr.0 as *const u8, 
+                        size_of::<TaskInfo>());
+    let start_time = match task.get_start_time(){
+        Some(time) => time,
+        None => {return -1;}
+    };
+    let now = get_time_us() as usize;
+    let interval = (now-start_time)/ 1000;
+    let task_info = TaskInfo{
+        status: TaskStatus::Running,
+        syscall_times: task.get_syscall_times(),
+        time: interval,
+    };
+
+    unsafe{
+        let task_info_bytes = core::slice::from_raw_parts((&task_info as *const TaskInfo) as *const u8 , size_of::<TaskInfo>());
+    
+    let mut idx = 0;
+    for buffer in buffers{
+        for i in 0..buffer.len(){
+            buffer[i] = task_info_bytes[idx];
+            idx += 1;
+        }
+    }
+   }
+    0
+    
 }
 
 /// YOUR JOB: Implement mmap.
@@ -142,7 +197,12 @@ pub fn sys_mmap(_start: usize, _len: usize, _port: usize) -> isize {
         "kernel:pid[{}] sys_mmap NOT IMPLEMENTED",
         current_task().unwrap().pid.0
     );
+    let task = current_task().unwrap();
+    if _start / PAGE_SIZE * PAGE_SIZE != _start  {return -1} 
+    
+    if task.mmap(_start,_len,_port).is_some() {return 0;}
     -1
+    
 }
 
 /// YOUR JOB: Implement munmap.
@@ -151,7 +211,10 @@ pub fn sys_munmap(_start: usize, _len: usize) -> isize {
         "kernel:pid[{}] sys_munmap NOT IMPLEMENTED",
         current_task().unwrap().pid.0
     );
-    -1
+    let task = current_task().unwrap();
+    if _start / PAGE_SIZE * PAGE_SIZE != _start  {return -1} 
+    if task.munmap(_start,_len) == true {return 0;}
+    return -1;
 }
 
 /// change data segment size
