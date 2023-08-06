@@ -12,6 +12,7 @@ use core::cell::RefMut;
 /// Task control block structure
 ///
 /// Directly save the contents that will not change during running
+
 pub struct TaskControlBlock {
     // Immutable
     /// Process identifier
@@ -35,6 +36,7 @@ impl TaskControlBlock {
         inner.memory_set.token()
     }
 }
+
 
 pub struct TaskControlBlockInner {
     /// The physical page number of the frame where the trap context is placed
@@ -74,6 +76,12 @@ pub struct TaskControlBlockInner {
 
     /// The system call info of this task
     pub task_syscall_times:[u32;MAX_SYSCALL_NUM],
+
+    ///stride schedule
+    pub stride:isize,
+
+    ///the priority of process
+    pub priority:isize,
 }
 
 impl TaskControlBlockInner {
@@ -126,6 +134,8 @@ impl TaskControlBlock {
                     program_brk: user_sp,
                     task_start_time: None,
                     task_syscall_times: [0; MAX_SYSCALL_NUM],
+                    stride : 0,
+                    priority : 2,
                 })
             },
         };
@@ -252,6 +262,8 @@ impl TaskControlBlock {
                     program_brk: parent_inner.program_brk,
                     task_start_time: parent_inner.task_start_time,
                     task_syscall_times: parent_inner.task_syscall_times.clone(),
+                    stride : 0,
+                    priority : 16,
                 })
             },
         });
@@ -273,6 +285,35 @@ impl TaskControlBlock {
         // ---- release parent PCB
 
     }
+    ///for syscall sys_set_priority
+    pub fn set_priority(&self,prio:isize) ->Option<isize>{
+        let mut task_inner = self.inner_exclusive_access();
+        if prio < 2 {
+            return None;
+        }
+        task_inner.priority = prio;
+        return Some(prio);
+    }
+    /// set stride from outside
+    pub fn set_stride(&self,s:isize)->isize{
+        let mut task_inner = self.inner_exclusive_access();
+        task_inner.stride = s;
+        return s;
+    }
+    /// set stride from outside
+    pub fn get_stride(&self)->isize{
+        let task_inner = self.inner_exclusive_access();
+        task_inner.stride
+        
+    }
+     /// set stride from outside
+    pub fn get_priority(&self)->isize{
+        let task_inner = self.inner_exclusive_access();
+        task_inner.priority
+        
+    }
+
+
     /// parent process fork the child process
     pub fn fork(self: &Arc<Self>) -> Arc<Self> {
         // ---- access parent PCB exclusively
@@ -304,6 +345,8 @@ impl TaskControlBlock {
                     program_brk: parent_inner.program_brk,
                     task_start_time: parent_inner.task_start_time,
                     task_syscall_times: parent_inner.task_syscall_times.clone(),
+                    stride : 0,
+                    priority : 16,
                 })
             },
         });

@@ -259,5 +259,11 @@ pub fn sys_set_priority(_prio: isize) -> isize {
         "kernel:pid[{}] sys_set_priority NOT IMPLEMENTED",
         current_task().unwrap().pid.0
     );
-    -1
+    let task = current_task().unwrap();
+    if let Some(prio) = task.set_priority(_prio) {
+        return prio;
+    }
+    return -1;
+    
+
 }
